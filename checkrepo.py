@@ -47,6 +47,8 @@ The following file may have been tampered with. Find anything that may be suspci
 Generate a risk report it should follow the following format, replace text in parentheses with actual values
 
 
+Risk Report:
+------------------------------------------------    
 (Programming Language)
 -------------------------------------------------
 (SAFE | LIKELY_SAFE | SUSPICIOUS | DANGER!)
