@@ -1,2 +1,2 @@
 # repochecker
-Audits a repo for potential tampering
+Audits a repo for potential tampering using AI
