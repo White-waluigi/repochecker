@@ -34,7 +34,6 @@ def send_to_openai(prompt, model="gpt-4"):
 
 
 
-    conn = http.client.HTTPSConnection("api.openai.com", context=ssl.create_default_context())
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {apikey}'
@@ -43,17 +42,25 @@ def send_to_openai(prompt, model="gpt-4"):
 
     system= f"""
 
-    It is assumed the following file has been tampered with. Find anything that may be suspcious or indicate tampering
+The following file may have been tampered with. Find anything that may be suspcious or indicate tampering
 
-    Generate a risk report it should contain
+Generate a risk report it should follow the following format, replace text in parentheses with actual values
 
-    - ALERT (if you think the file has been tampered with)
-    - A Risk score 0-10
-    - A short description of what you think the code is supposed to be doing
-    - A list of things that are suspicious
-    - A comment, if necessary
 
-    Your output will be saved a txt file. So make sure to keep to the format
+(Programming Language)
+-------------------------------------------------
+(SAFE | LIKELY_SAFE | SUSPICIOUS | DANGER!)
+-------------------------------------------------
+(A Risk score (0-10))
+-------------------------------------------------
+(A short description of what you think the code is supposed to be doing)
+-------------------------------------------------
+(A list of things that are suspicious)
+-------------------------------------------------
+(A comment, if necessary)
+-------------------------------------------------
+
+Your output will be saved a txt file. So make sure to keep to the format
 """
 
 
@@ -67,20 +74,31 @@ def send_to_openai(prompt, model="gpt-4"):
         "max_tokens": 1000
     })
 
-    try:
-        conn.request("POST", "/v1/chat/completions", body, headers)
-        response = conn.getresponse()
-        data = response.read()
-        conn.close()
 
-        if response.status != 200:
-            print(f"OpenAI API error: {response.status} {response.reason}")
-            return f"ERROR: {data.decode()}"
+    retries = 5
+    for attempt in range(retries):
+        try:
+            conn = http.client.HTTPSConnection("api.openai.com", context=ssl.create_default_context())
+            conn.request("POST", "/v1/chat/completions", body, headers)
+            response = conn.getresponse()
+            data = response.read()
+            conn.close()
 
-        result = json.loads(data)
-        return result['choices'][0]['message']['content']
-    except Exception as e:
-        return f"Failed to contact OpenAI: {e}"
+            if response.status != 200:
+                print(f"OpenAI API error: {response.status} {response.reason}")
+                raise Exception(data.decode())
+
+            result = json.loads(data)
+            return result['choices'][0]['message']['content']
+
+        except Exception as e:
+            if attempt < retries - 1:
+                print("Error, retrying...")
+                time.sleep(2)  # backoff delay
+            else:
+                print("Ok, giving up.")
+                print(f"Last error: {e}")
+                sys.exit(1)
 
 
 def create_risk_report(file_path):
@@ -146,6 +164,9 @@ def main():
         print("This repo has already been processed.")
         sys.exit()
 
+    # Create the file and write "complete" into it
+    with open("repo_clean_mark", "w") as f:
+        f.write("complete")
 
 
 
@@ -158,9 +179,6 @@ def main():
         remaining-=1
         print(str(remaining)+" files left")
 
-    # Create the file and write "complete" into it
-    with open("repo_clean_mark", "w") as f:
-        f.write("complete")
 
     print("Done.")
 
