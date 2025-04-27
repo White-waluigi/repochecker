@@ -30,7 +30,7 @@ def load_api_key():
         exit(1)
 
 # Send prompt to OpenAI
-def send_to_openai(prompt, model="gpt-4"):
+def send_to_openai(prompt, model="gpt-4.1"):
 
 
 
@@ -96,7 +96,7 @@ Your output will be saved a txt file. So make sure to keep to the format
         except Exception as e:
             if attempt < retries - 1:
                 print("Error, retrying...")
-                time.sleep(2)  # backoff delay
+                time.sleep(200)  # backoff delay
             else:
                 print("Ok, giving up.")
                 print(f"Last error: {e}")
